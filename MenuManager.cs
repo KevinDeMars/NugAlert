@@ -97,8 +97,8 @@ namespace NugAlert
                 var document = new HtmlDocument();
                 document.LoadHtml(content);
 
+                Console.WriteLine($"Parsing menu for {date} {kvp.Key.Item1} {kvp.Key.Item2}");
                 result.Add(new Menu(date, kvp.Key.Item1, kvp.Key.Item2, document));
-                Console.WriteLine($"Parsed menu for {date} {kvp.Key.Item1} {kvp.Key.Item2}");
             }
 
             return result;
