@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29006.145
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NugAlert", "NugAlert.csproj", "{AFAC4B1B-8FC9-4C5C-88A8-F419ECF72375}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AFAC4B1B-8FC9-4C5C-88A8-F419ECF72375}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AFAC4B1B-8FC9-4C5C-88A8-F419ECF72375}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AFAC4B1B-8FC9-4C5C-88A8-F419ECF72375}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AFAC4B1B-8FC9-4C5C-88A8-F419ECF72375}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FE9131FA-0702-4065-A6E0-B24A234FA8BA}
+	EndGlobalSection
+EndGlobal

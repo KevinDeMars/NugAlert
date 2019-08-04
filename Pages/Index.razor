@@ -1,0 +1,69 @@
+﻿@page "/"
+@inject LocalStorage Storage
+
+@if (dailyMenus == null)
+{
+    <h1>Fetching menus... Please wait.</h1>
+}
+else
+{
+    <div class="row justify-content-md-center">
+        @for (int daysFromNow = 0; daysFromNow < 7; ++daysFromNow)
+        {
+            var day = DateTime.Now.AddDays(daysFromNow);
+            <div class="col col-sm-2 col-md-auto">
+                <button @onclick="@(async () => await SetDay(day))" type="button" class="@((day.Date == selectedDay.Date) ? "active" : "") btn btn-primary">@day.DayOfWeek</button>
+            </div>
+            
+        }
+    </div>
+
+
+    var menusByMeal = dailyMenus.GroupBy(m => m.Meal);
+
+    @foreach (var grouping in menusByMeal)
+    {
+        <h1>@grouping.Key</h1> <!-- Meal name -->
+        @foreach (var menu in grouping)
+        {
+            <h3>@menu.Location</h3>
+            @foreach (var category in menu.Categories)
+            {
+                <!-- Some categories only have addon items, so check count here -->
+                if (category.Items.Count > 0)
+                {
+                    <h5>@category.Name</h5>
+                    <ul>
+                        @foreach (var item in category.Items)
+                        {
+                            <li>@item</li>
+                        }
+                    </ul>
+                }
+
+            }
+        }
+    }
+
+}
+
+@code {
+
+MenuManager menuMgr;
+DateTime selectedDay = DateTime.Now;
+List<Menu> dailyMenus = null;
+
+protected override async Task OnInitAsync()
+{
+    menuMgr = new MenuManager(Storage);
+    dailyMenus = await menuMgr.LoadDay(selectedDay);
+}
+
+protected async Task SetDay(DateTime day)
+{
+    this.selectedDay = day;
+    this.dailyMenus = null;
+    this.dailyMenus = await menuMgr.LoadDay(day);
+}
+
+}

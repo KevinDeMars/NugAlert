@@ -1,0 +1,8 @@
+﻿.content {
+    margin: auto;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+    border-bottom-left-radius: 1.5em;
+    border-bottom-right-radius: 1.5em;
+}
