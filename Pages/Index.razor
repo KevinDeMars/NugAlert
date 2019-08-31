@@ -62,7 +62,6 @@
         <h2>No data could be found for the day.</h2>
     }
 
-
 }
 
 @code {
@@ -71,7 +70,7 @@
     DateTime selectedDay = DateTime.Now.Date;
     List<Menu> dailyMenus = null;
 
-    protected override async Task OnInitAsync()
+    protected override async Task OnInitializedAsync()
     {
         menuMgr = new MenuManager(Storage);
         dailyMenus = await menuMgr.LoadDay(selectedDay);

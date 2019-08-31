@@ -1,4 +1,4 @@
-using Cloudcrate.AspNetCore.Blazor.Browser.Storage;
+using Blazor.Extensions.Storage;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components.Builder;
 using Microsoft.AspNetCore.Hosting;

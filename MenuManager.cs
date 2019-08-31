@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
-using Cloudcrate.AspNetCore.Blazor.Browser.Storage;
+using Blazor.Extensions.Storage;
 using HtmlAgilityPack;
 
 namespace NugAlert
@@ -21,20 +21,6 @@ namespace NugAlert
         {
             this.storage = storage;
         }
-
-        /*public async Task<Dictionary<DateTime, List<Menu>>> GetThisWeeksMenus()
-        {
-            var tasks = new List<Task>();
-            for (int daysFromNow = 0; daysFromNow < 7; ++daysFromNow)
-            {
-                var day = DateTime.Now.AddDays(daysFromNow);
-                tasks.Add(LoadDay(day));
-            }
-            foreach (var task in tasks)
-                await task;
-            return cache;
-        }*/
-
         public async Task<List<Menu>> LoadDay(DateTime day)
         {
             if (cache.TryGetValue(day, out List<Menu> menus))
@@ -44,7 +30,7 @@ namespace NugAlert
 
             string storageKey = day.ToString("yyyy-MM-dd");
 
-            menus = storage.GetItem<List<Menu>>(storageKey);
+            menus = await storage.GetItem<List<Menu>>(storageKey);
 
             if (menus != null && menus.Count > 0)
             {
@@ -55,7 +41,7 @@ namespace NugAlert
             // Couldn't load from storage so fetch the day
             menus = await FetchMenus(day);
             cache[day] = menus;
-            storage.SetItem(storageKey, menus);
+            await storage.SetItem(storageKey, menus);
             return menus;
         }
 
