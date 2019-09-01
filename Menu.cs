@@ -68,7 +68,7 @@ namespace NugAlert
         }
     }
 
-    enum Location
+    public enum Location
     {
         Brooks = 6523,
         EastVillage = 6524,
@@ -76,7 +76,7 @@ namespace NugAlert
         Memo = 1045
     }
 
-    enum Meal
+    public enum Meal
     {
         Breakfast = 1117, Lunch = 1118, Dinner = 1119, Brunch = 1120
     }

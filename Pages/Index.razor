@@ -11,6 +11,7 @@
         <button class="btn btn-outline-dark" @onclick="@(async() => await NextWeek())">&gt;</button>
     </div>
 </div>
+
 <div class="row justify-content-md-center mt-2">
     @for (int dayIndex = 0; dayIndex < 7; ++dayIndex)
     {
@@ -22,42 +23,51 @@
     }
 </div>
 
+<div class="row justify-content-md-center mt-2">
+    @foreach (Meal meal in Enum.GetValues(typeof(Meal)))
+    {
+        <div class="col col-sm col-md-auto px-0 mx-md-2">
+            <button type="button" class="btn btn-outline-dark btn-block @(selectedMeal == meal ? "active" : "")"
+                    @onclick="@(() => SetMeal(meal))">
+                @meal
+            </button>
+        </div>
+    }
+</div>
+
 @if (dailyMenus == null)
 {
     <h2>Fetching menus... Please wait.</h2>
 }
-// If any category isn't empty, show menus
-else if (dailyMenus.Any(menu => menu.Categories.Any(cat => cat.Items.Count > 0)))
+// Show menus if there is a nonempty category in a menu of the selected menu
+else if (dailyMenus.Where(m => m.Meal == selectedMeal)
+    .Any(menu => menu.Categories.Any(cat => cat.Items.Count > 0)))
 {
-    var menusByMeal = dailyMenus.GroupBy(m => m.Meal);
-
-    @foreach (var grouping in menusByMeal)
+    
+    
+    @foreach (var menu in dailyMenus.Where(menu => menu.Meal == selectedMeal))
     {
-        <h1>@grouping.Key</h1> <!-- Meal name -->
-        @foreach (var menu in grouping)
+        <h3>@menu.Location</h3>
+        @foreach (var category in menu.Categories)
         {
-            <h3>@menu.Location</h3>
-            @foreach (var category in menu.Categories)
+            <!-- Some categories only have addon items, so check count here -->
+            if (category.Items.Count > 0)
             {
-                <!-- Some categories only have addon items, so check count here -->
-                if (category.Items.Count > 0)
-                {
-                    <h5>@category.Name</h5>
-                    <ul>
-                        @foreach (var item in category.Items)
-                        {
-                            <li>@item</li>
-                        }
-                    </ul>
-                }
-
+                <h5>@category.Name</h5>
+                <ul>
+                    @foreach (var item in category.Items)
+                    {
+                        <li>@item</li>
+                    }
+                </ul>
             }
+
         }
     }
 }
 else
 {
-    <h2>No data could be found for the day.</h2>
+    <h2>No data was found for that meal.</h2>
 }
 
 
@@ -66,6 +76,7 @@ else
     MenuManager menuMgr;
     DateTime selectedDay = DateTime.Now.Date;
     List<Menu> dailyMenus = null;
+    Meal selectedMeal = Meal.Breakfast;
 
     protected override async Task OnInitializedAsync()
     {
@@ -78,6 +89,11 @@ else
         this.selectedDay = day;
         this.dailyMenus = null;
         this.dailyMenus = await menuMgr.LoadDay(day);
+    }
+
+    protected void SetMeal(Meal meal)
+    {
+        this.selectedMeal = meal;
     }
 
     protected async Task PrevWeek()
