@@ -43,11 +43,14 @@
 else if (dailyMenus.Where(m => m.Meal == selectedMeal)
     .Any(menu => menu.Categories.Any(cat => cat.Items.Count > 0)))
 {
-    
-    
-    @foreach (var menu in dailyMenus.Where(menu => menu.Meal == selectedMeal))
+
+
+    var menus = dailyMenus.Where(menu => menu.Meal == selectedMeal);
+    int count = menus.Count();
+    int i = 0;
+    @foreach(var menu in menus)
     {
-        <h3>@menu.Location</h3>
+        <h2>@menu.Location</h2>
         @foreach (var category in menu.Categories)
         {
             <!-- Some categories only have addon items, so check count here -->
@@ -63,6 +66,11 @@ else if (dailyMenus.Where(m => m.Meal == selectedMeal)
             }
 
         }
+        if (i != count - 1)
+        {
+            <hr />
+        }
+        ++i;
     }
 }
 else
