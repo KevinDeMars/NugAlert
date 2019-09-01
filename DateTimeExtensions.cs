@@ -7,11 +7,15 @@ namespace NugAlert
 {
     public static class DateTimeExtensions
     {
-        public static DateTime GetLastSunday(this DateTime date)
+        public static DateTime LastSunday(this DateTime date)
         {
-            while (date.DayOfWeek != DayOfWeek.Sunday)
-                date = date.AddDays(-1);
-            return date;
+            int[] daysToAdd = { 0, -1, -2, -3, -4, -5, -6 };
+            return date.AddDays(daysToAdd[(int)date.DayOfWeek]);
+        }
+
+        public static int WeekDifference(DateTime lhs, DateTime rhs)
+        {
+            return (lhs.LastSunday().DayOfYear - rhs.LastSunday().DayOfYear) / 7;
         }
     }
 }

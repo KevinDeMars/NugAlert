@@ -1,68 +1,65 @@
 ﻿@page "/"
 @inject LocalStorage Storage
-@{
-    DateTime sunday = selectedDay.GetLastSunday();
-    <div class="row justify-content-center">
-        <div class="col-sm-auto text-center">
-            <button class="btn btn-outline-dark" @onclick="@(async() => await PrevWeek())">&lt;</button>
-        </div>
-        <div class="col-sm col-md-3 align-middle text-center">
-            @sunday.ToShortDateString() - @sunday.AddDays(6).ToShortDateString()
-        </div>
-        <div class="col-sm-auto text-center">
-            <button class="btn btn-outline-dark" @onclick="@(async() => await NextWeek())">&gt;</button>
-        </div>
+<div class="row justify-content-center">
+    <div class="col-sm-auto text-center">
+        <button class="btn btn-outline-dark" @onclick="@(async() => await PrevWeek())">&lt;</button>
     </div>
-    <div class="row justify-content-md-center mt-2">
-        @for (int dayIndex = 0; dayIndex < 7; ++dayIndex)
-        {
-            var day = sunday.AddDays(dayIndex);
-            <div class="col col-sm col-md-auto px-0 mx-md-2">
-                <button @onclick="@(async () => await SetDay(day))" type="button" class="@((day.Date == selectedDay.Date) ? "active" : "") btn btn-outline-dark btn-block">@day.DayOfWeek</button>
-            </div>
-
-        }
+    <div class="col-sm col-md-3 align-middle text-center">
+        @WeeksFromOrAheadString(selectedDay)
     </div>
-
-    if (dailyMenus == null)
+    <div class="col-sm-auto text-center">
+        <button class="btn btn-outline-dark" @onclick="@(async() => await NextWeek())">&gt;</button>
+    </div>
+</div>
+<div class="row justify-content-md-center mt-2">
+    @for (int dayIndex = 0; dayIndex < 7; ++dayIndex)
     {
-        <h2>Fetching menus... Please wait.</h2>
+        var day = selectedDay.LastSunday().AddDays(dayIndex);
+        <div class="col col-sm col-md-auto px-0 mx-md-2">
+            <button @onclick="@(async () => await SetDay(day))" type="button" class="@((day.Date == selectedDay.Date) ? "active" : "") btn btn-outline-dark btn-block">@day.DayOfWeek</button>
+        </div>
+
     }
-    // If any category isn't empty, show menus
-    else if (dailyMenus.Any(menu => menu.Categories.Any(cat => cat.Items.Count > 0)))
+</div>
+
+@if (dailyMenus == null)
+{
+    <h2>Fetching menus... Please wait.</h2>
+}
+// If any category isn't empty, show menus
+else if (dailyMenus.Any(menu => menu.Categories.Any(cat => cat.Items.Count > 0)))
+{
+    var menusByMeal = dailyMenus.GroupBy(m => m.Meal);
+
+    @foreach (var grouping in menusByMeal)
     {
-        var menusByMeal = dailyMenus.GroupBy(m => m.Meal);
-
-        @foreach (var grouping in menusByMeal)
+        <h1>@grouping.Key</h1> <!-- Meal name -->
+        @foreach (var menu in grouping)
         {
-            <h1>@grouping.Key</h1> <!-- Meal name -->
-            @foreach (var menu in grouping)
+            <h3>@menu.Location</h3>
+            @foreach (var category in menu.Categories)
             {
-                <h3>@menu.Location</h3>
-                @foreach (var category in menu.Categories)
+                <!-- Some categories only have addon items, so check count here -->
+                if (category.Items.Count > 0)
                 {
-                    <!-- Some categories only have addon items, so check count here -->
-                    if (category.Items.Count > 0)
-                    {
-                        <h5>@category.Name</h5>
-                        <ul>
-                            @foreach (var item in category.Items)
-                            {
-                                <li>@item</li>
-                            }
-                        </ul>
-                    }
-
+                    <h5>@category.Name</h5>
+                    <ul>
+                        @foreach (var item in category.Items)
+                        {
+                            <li>@item</li>
+                        }
+                    </ul>
                 }
+
             }
         }
     }
-    else
-    {
-        <h2>No data could be found for the day.</h2>
-    }
-
 }
+else
+{
+    <h2>No data could be found for the day.</h2>
+}
+
 
 @code {
 
@@ -85,16 +82,25 @@
 
     protected async Task PrevWeek()
     {
-        selectedDay = selectedDay.AddDays(-7);
+        selectedDay = selectedDay.AddDays(-7).LastSunday();
         this.dailyMenus = null;
         this.dailyMenus = await menuMgr.LoadDay(selectedDay);
     }
 
     protected async Task NextWeek()
     {
-        selectedDay = selectedDay.AddDays(7);
+        selectedDay = selectedDay.AddDays(7).LastSunday();
         this.dailyMenus = null;
         this.dailyMenus = await menuMgr.LoadDay(selectedDay);
+    }
+
+    protected string WeeksFromOrAheadString(DateTime day)
+    {
+        int diff = DateTimeExtensions.WeekDifference(day, DateTime.Now);
+        int abs = Math.Abs(diff);
+        if (diff == 0)
+            return "This week";
+        return Math.Abs(diff) + (abs == 1 ? " week " : " weeks ") + (diff < 0 ? "ago" : "from now");
     }
 
 }
