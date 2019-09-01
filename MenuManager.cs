@@ -84,7 +84,11 @@ namespace NugAlert
                 document.LoadHtml(content);
 
                 Console.WriteLine($"Parsing menu for {date} {kvp.Key.Item1} {kvp.Key.Item2}");
-                result.Add(new Menu(date, kvp.Key.Item1, kvp.Key.Item2, document));
+                var menu = new Menu(date, kvp.Key.Item1, kvp.Key.Item2, document);
+                if (menu.Categories.Count > 0)
+                    result.Add(menu);
+                else
+                    Console.WriteLine($"No non-empty categories found for {date} {kvp.Key.Item1} {kvp.Key.Item2}");
             }
 
             return result;

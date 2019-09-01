@@ -32,6 +32,12 @@ namespace NugAlert
 
             var documentCategories = html.DocumentNode.SelectNodes("//*[@class='menu__station']");
 
+            if (documentCategories == null)
+            {
+                Console.WriteLine($"No menu__station nodes found for {location} {day} {meal}");
+                return;
+            }
+
             foreach (var documentCategory in documentCategories)
             {
                 var category = new MenuCategory();
