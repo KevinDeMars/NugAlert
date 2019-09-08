@@ -4,6 +4,7 @@ using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 using System.Xml.Serialization;
 using Blazor.Extensions.Storage;
 using HtmlAgilityPack;
@@ -47,9 +48,11 @@ namespace NugAlert
 
         private async Task<List<Menu>> FetchMenus(DateTime date)
         {
-            var futureHtmlDocs = new Dictionary<(Location,Meal), Task<HttpResponseMessage>>();
-            var http = new HttpClient();
+            Stopwatch watch = new Stopwatch();
+            watch.Start();
 
+            var http = new HttpClient();
+            var futureStreams = new Dictionary<(Location, Meal), Task<Stream>>();
             foreach (Location location in Enum.GetValues(typeof(Location)))
             {
                 foreach (Meal meal in MealInfo.GetValidMeals(date, location))
@@ -57,38 +60,38 @@ namespace NugAlert
                     string dateStr = date.ToString("MM/dd/yyyy");
                     string url = $"https://baylor.campusdish.com/api/menus/GetMenu?mode=Daily&locationId={(int)location}&periodId={(int)meal}&date={dateStr}";
                     url = "https://cors-anywhere.herokuapp.com/" + url;
-                    //Console.WriteLine(url);
-                    futureHtmlDocs[(location, meal)] = http.GetAsync(url);
+
+                    futureStreams[(location, meal)] = http.GetStreamAsync(url);
                 }
             }
 
+            Console.WriteLine($"Prepared requests in {watch.Elapsed.TotalSeconds} seconds");
+
             var result = new List<Menu>();
 
-            foreach (var kvp in futureHtmlDocs)
+            foreach (var kvp in futureStreams)
             {
-                var response = await kvp.Value;
-                if (!response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"Got non-success response code {response.StatusCode} from {date} {kvp.Key.Item1} {kvp.Key.Item2}");
-                    continue;
-                }
-                
-                var content = await response.Content.ReadAsStringAsync();
-                if (content.Length == 0)
-                {
-                    Console.WriteLine($"Got empty result from {date} {kvp.Key.Item1} {kvp.Key.Item2}");
-                    continue;
-                }
+                watch.Restart();
+                var (location, meal) = kvp.Key;
+                var htmlStream = await kvp.Value;
 
-                var document = new HtmlDocument();
-                document.LoadHtml(content);
+                Console.WriteLine($"Awaited stream in {watch.Elapsed.TotalSeconds} seconds");
+                watch.Restart();
 
+                var htmlDoc = new HtmlDocument();
+                await Task.Run(() => htmlDoc.Load(htmlStream));
+
+                Console.WriteLine($"Loaded html document in {watch.Elapsed.TotalSeconds} seconds");
+                watch.Restart();
                 Console.WriteLine($"Parsing menu for {date} {kvp.Key.Item1} {kvp.Key.Item2}");
-                var menu = new Menu(date, kvp.Key.Item1, kvp.Key.Item2, document);
-                if (menu.Categories.Count > 0)
+
+                var menu = new Menu(date, location, meal);
+                if (await Task.Run(() => menu.LoadHtml(htmlDoc)))
                     result.Add(menu);
                 else
-                    Console.WriteLine($"No non-empty categories found for {date} {kvp.Key.Item1} {kvp.Key.Item2}");
+                    Console.WriteLine($"Failed loading menu for {date} {kvp.Key.Item1} {kvp.Key.Item2}");
+
+                Console.WriteLine($"Parsed menu in {watch.Elapsed.TotalSeconds} seconds");
             }
 
             return result;

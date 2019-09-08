@@ -23,29 +23,31 @@ namespace NugAlert
             Categories = new List<MenuCategory>();
         }
 
-        public Menu(DateTime day, Location location, Meal meal, HtmlDocument html)
+        public Menu(DateTime day, Location location, Meal meal)
         {
             Day = day;
             Location = location;
             Meal = meal;
             Categories = new List<MenuCategory>();
+        }
 
-            var documentCategories = html.DocumentNode.SelectNodes("//*[@class='menu__station']");
+        public bool LoadHtml(HtmlDocument html)
+        {
+            var documentCategories = html.DocumentNode.SelectNodes("/div/div/div/div/div/div[@class='menu__station']");
 
             if (documentCategories == null)
             {
-                Console.WriteLine($"No menu__station nodes found for {location} {day} {meal}");
-                return;
+                return false;
             }
 
             foreach (var documentCategory in documentCategories)
             {
                 var category = new MenuCategory();
-                category.Name = documentCategory.SelectSingleNode(".//*[contains(@class, 'section-subtitle')]").GetDirectInnerText();
+                category.Name = documentCategory.SelectSingleNode("./h2[contains(@class, 'section-subtitle')]").GetDirectInnerText();
                 category.Name = WebUtility.HtmlDecode(category.Name);
 
-                var docItems = documentCategory.SelectNodes("./div[@class='menu__category']//a[@class='viewItem']");
-                var docAddonItems = documentCategory.SelectNodes("./div[@class='menu__addOns']//a[@class='viewItem']");
+                var docItems = documentCategory.SelectNodes("./div[@class='menu__category']/ul/li/span/a[@class='viewItem']");
+                var docAddonItems = documentCategory.SelectNodes("./div[@class='menu__addOns']/ul/li/span/a[@class='viewItem']");
 
                 if (docItems != null)
                 {
@@ -61,10 +63,12 @@ namespace NugAlert
                         category.AddonItems.Add(WebUtility.HtmlDecode(item.GetDirectInnerText()));
                     }
                 }
-                
+
                 if (category.Items.Count > 0 || category.AddonItems.Count > 0)
                     Categories.Add(category);
             }
+
+            return Categories.Count > 0;
         }
     }
 
