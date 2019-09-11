@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Xml.Serialization;
 using Blazor.Extensions.Storage;
-using HtmlAgilityPack;
 
 namespace NugAlert
 {
@@ -52,7 +51,7 @@ namespace NugAlert
             watch.Start();
 
             var http = new HttpClient();
-            var futureStreams = new Dictionary<(Location, Meal), Task<Stream>>();
+            var futureResponses = new Dictionary<(Location, Meal), Task<HttpResponseMessage>>();
             foreach (Location location in Enum.GetValues(typeof(Location)))
             {
                 foreach (Meal meal in MealInfo.GetValidMeals(date, location))
@@ -61,7 +60,7 @@ namespace NugAlert
                     string url = $"https://baylor.campusdish.com/api/menus/GetMenu?mode=Daily&locationId={(int)location}&periodId={(int)meal}&date={dateStr}";
                     url = "https://cors-anywhere.herokuapp.com/" + url;
 
-                    futureStreams[(location, meal)] = http.GetStreamAsync(url);
+                    futureResponses[(location, meal)] = http.GetAsync(url);
                 }
             }
 
@@ -69,24 +68,23 @@ namespace NugAlert
 
             var result = new List<Menu>();
 
-            foreach (var kvp in futureStreams)
+            foreach (var kvp in futureResponses)
             {
+                Console.WriteLine($"Handling request for {date} {kvp.Key.Item1} {kvp.Key.Item2}");
                 watch.Restart();
                 var (location, meal) = kvp.Key;
-                var htmlStream = await kvp.Value;
+                var response = await kvp.Value;
 
-                Console.WriteLine($"Awaited stream in {watch.Elapsed.TotalSeconds} seconds");
+                Console.WriteLine($"Got response header in {watch.Elapsed.TotalSeconds} seconds");
                 watch.Restart();
 
-                var htmlDoc = new HtmlDocument();
-                await Task.Run(() => htmlDoc.Load(htmlStream));
+                string html = await response.Content.ReadAsStringAsync();
 
-                Console.WriteLine($"Loaded html document in {watch.Elapsed.TotalSeconds} seconds");
+                Console.WriteLine($"Got response body in {watch.Elapsed.TotalSeconds} seconds");
                 watch.Restart();
-                Console.WriteLine($"Parsing menu for {date} {kvp.Key.Item1} {kvp.Key.Item2}");
 
                 var menu = new Menu(date, location, meal);
-                if (await Task.Run(() => menu.LoadHtml(htmlDoc)))
+                if (await Task.Run(() => menu.LoadHtml(html)))
                     result.Add(menu);
                 else
                     Console.WriteLine($"Failed loading menu for {date} {kvp.Key.Item1} {kvp.Key.Item2}");

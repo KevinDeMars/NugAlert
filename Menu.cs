@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
-using HtmlAgilityPack;
+using System.Text.RegularExpressions;
 
 namespace NugAlert
 {
@@ -31,44 +31,50 @@ namespace NugAlert
             Categories = new List<MenuCategory>();
         }
 
-        public bool LoadHtml(HtmlDocument html)
+        public bool LoadHtml(string html)
         {
-            var documentCategories = html.DocumentNode.SelectNodes("/div/div/div/div/div/div[@class='menu__station']");
+            // xpath notation:
+            // categories: /div/div/div/div/div/div[@class='menu__station']
+            //    name:   ./h2[contains(@class, 'section-subtitle')]
+            //    items:  ./div[@class='menu__category']/ul/li/span/a[@class='viewItem']
+            //    addons: ./div[@class='menu__addOns']/ul/li/span/a[@class='viewItem']
 
-            if (documentCategories == null)
-            {
-                return false;
-            }
+            // 1. Find all "section-subtitle"s
+            // 2. Everything between next '>' and the following '<' is the section's name
+            //     3. Find menu__addOns
+            //     4. Find all "viewItems"s
+            //          5. If index is before menu__addOns, it's a regular item; else, it's an addon.
 
-            foreach (var documentCategory in documentCategories)
+            string[] categories = html.Split(new string[] { "menu__station" }, StringSplitOptions.None);
+            // Skip the first string in the array, because we're only interested in the stuff after the first instance of "menu__station"
+            for (int i = 1; i < categories.Length; ++i)
             {
                 var category = new MenuCategory();
-                category.Name = documentCategory.SelectSingleNode("./h2[contains(@class, 'section-subtitle')]").GetDirectInnerText();
-                category.Name = WebUtility.HtmlDecode(category.Name);
+                string htmlCategory = categories[i];
+                // searches for "section-subtitle", then finds the closing tag and captures the title between the tags
+                var nameMatch = Regex.Match(htmlCategory, "section-subtitle.*?>(.*?)<");
+                category.Name = nameMatch.Groups[1].Value;
 
-                var docItems = documentCategory.SelectNodes("./div[@class='menu__category']/ul/li/span/a[@class='viewItem']");
-                var docAddonItems = documentCategory.SelectNodes("./div[@class='menu__addOns']/ul/li/span/a[@class='viewItem']");
-
-                if (docItems != null)
+                int addonsIdx = htmlCategory.IndexOf("menu__addOns");
+                foreach(Match match in Regex.Matches(htmlCategory, "viewItem.*?>(.*?)<"))
                 {
-                    foreach (var item in docItems)
+                    string itemName = WebUtility.HtmlDecode(match.Groups[1].Value);
+                    if (match.Index < addonsIdx || addonsIdx == -1)
                     {
-                        category.Items.Add(WebUtility.HtmlDecode(item.GetDirectInnerText()));
+                        
+                        category.Items.Add(itemName);
                     }
-                }
-                if (docAddonItems != null)
-                {
-                    foreach (var item in docAddonItems)
+                    else
                     {
-                        category.AddonItems.Add(WebUtility.HtmlDecode(item.GetDirectInnerText()));
+                        category.AddonItems.Add(itemName);
                     }
                 }
 
                 if (category.Items.Count > 0 || category.AddonItems.Count > 0)
-                    Categories.Add(category);
+                    this.Categories.Add(category);
             }
 
-            return Categories.Count > 0;
+            return true;
         }
     }
 
