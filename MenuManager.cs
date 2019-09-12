@@ -47,9 +47,6 @@ namespace NugAlert
 
         private async Task<List<Menu>> FetchMenus(DateTime date)
         {
-            Stopwatch watch = new Stopwatch();
-            watch.Start();
-
             var http = new HttpClient();
             var futureResponses = new Dictionary<(Location, Meal), Task<HttpResponseMessage>>();
             foreach (Location location in Enum.GetValues(typeof(Location)))
@@ -64,32 +61,20 @@ namespace NugAlert
                 }
             }
 
-            Console.WriteLine($"Prepared requests in {watch.Elapsed.TotalSeconds} seconds");
-
             var result = new List<Menu>();
 
             foreach (var kvp in futureResponses)
             {
-                Console.WriteLine($"Handling request for {date} {kvp.Key.Item1} {kvp.Key.Item2}");
-                watch.Restart();
                 var (location, meal) = kvp.Key;
                 var response = await kvp.Value;
 
-                Console.WriteLine($"Got response header in {watch.Elapsed.TotalSeconds} seconds");
-                watch.Restart();
-
                 string html = await response.Content.ReadAsStringAsync();
-
-                Console.WriteLine($"Got response body in {watch.Elapsed.TotalSeconds} seconds");
-                watch.Restart();
 
                 var menu = new Menu(date, location, meal);
                 if (await Task.Run(() => menu.LoadHtml(html)))
                     result.Add(menu);
                 else
                     Console.WriteLine($"Failed loading menu for {date} {kvp.Key.Item1} {kvp.Key.Item2}");
-
-                Console.WriteLine($"Parsed menu in {watch.Elapsed.TotalSeconds} seconds");
             }
 
             return result;

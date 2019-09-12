@@ -17,7 +17,9 @@
     {
         var day = selectedDay.LastSunday().AddDays(dayIndex);
         <div class="col col-sm col-md-auto px-0 mx-md-2">
-            <button @onclick="@(async () => await SetDay(day))" type="button" class="@((day.Date == selectedDay.Date) ? "active" : "") btn btn-outline-dark btn-block">@day.DayOfWeek</button>
+            <button @onclick="@(async () => await SetDay(day))" type="button" disabled="@(!dayIsLoaded[dayIndex])"
+                    class="@((day.Date == selectedDay.Date) ? "active" : "") btn btn-outline-dark btn-block"
+            >@day.DayOfWeek</button>
         </div>
 
     }
@@ -80,16 +82,42 @@ else
 
 
 @code {
-
     MenuManager menuMgr;
     DateTime selectedDay = DateTime.Now.Date;
     List<Menu> dailyMenus = null;
     Meal selectedMeal = Meal.Breakfast;
+    bool[] dayIsLoaded = new bool[7];
 
     protected override async Task OnInitializedAsync()
     {
         menuMgr = new MenuManager(Storage);
         dailyMenus = await menuMgr.LoadDay(selectedDay);
+        dayIsLoaded[(int) selectedDay.DayOfWeek] = true;
+        await LoadWeeklyMenus();
+    }
+
+    protected async Task LoadWeeklyMenus()
+    {
+        // Load other days in background
+        var tasks = new List<Task>();
+        for (int i = 0; i < 7; ++i)
+        {
+            // See https://stackoverflow.com/questions/271440/captured-variable-in-a-loop-in-c-sharp
+            int iCopy = i;
+
+            var task = menuMgr.LoadDay(selectedDay.LastSunday().AddDays(iCopy))
+                .ContinueWith(x => {
+                    Console.WriteLine($"Loaded menus for {(DayOfWeek) iCopy}");
+                    dayIsLoaded[iCopy] = true;
+                    StateHasChanged();
+                } );
+            tasks.Add(task);
+        }
+        // Wait for tasks to finish
+        foreach (Task t in tasks)
+        {
+            await t;
+        }
     }
 
     protected async Task SetDay(DateTime day)
@@ -106,16 +134,20 @@ else
 
     protected async Task PrevWeek()
     {
+        dayIsLoaded = new bool[7];
         selectedDay = selectedDay.AddDays(-7).LastSunday();
         this.dailyMenus = null;
         this.dailyMenus = await menuMgr.LoadDay(selectedDay);
+        await LoadWeeklyMenus();
     }
 
     protected async Task NextWeek()
     {
+        dayIsLoaded = new bool[7];
         selectedDay = selectedDay.AddDays(7).LastSunday();
         this.dailyMenus = null;
         this.dailyMenus = await menuMgr.LoadDay(selectedDay);
+        await LoadWeeklyMenus();
     }
 
     protected string WeeksFromOrAheadString(DateTime day)
